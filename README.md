@@ -35,7 +35,7 @@ PSD-MSBDN|126M|[Google Drive](https://drive.google.com/file/d/1kHdjj8p_-CzGfcF0b
 PSD-FFANET|24M|[Google Drive](https://drive.google.com/file/d/1sRlVJgCZck7y9yYrWRwJ61O75ikFMwg-/view?usp=sharing)
 PSD-GCANET|9M|[Google Drive](https://drive.google.com/file/d/1M7fwAcBzsJ3RcBF6HW3x1MSpmX2NuMv6/view?usp=sharing)
 
-百度网盘链接: (https://pan.baidu.com/s/1M1RO5AZaYcZtckb-OzfXgw), 提取码: ixcz)
+百度网盘链接: https://pan.baidu.com/s/1M1RO5AZaYcZtckb-OzfXgw (提取码: ixcz)
 
 In the paper, all the qualitative results and most visual comparisons are produced by **PSD-MSBDN** model.
 
