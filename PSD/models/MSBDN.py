@@ -1,7 +1,6 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
-import math
 
 class ConvBlock(torch.nn.Module):
     def __init__(self, input_size, output_size, kernel_size=3, stride=1, padding=1, bias=True, activation='prelu', norm=None):
@@ -37,6 +36,7 @@ class ConvBlock(torch.nn.Module):
         else:
             return out
 
+
 class DeconvBlock(torch.nn.Module):
     def __init__(self, input_size, output_size, kernel_size=4, stride=2, padding=1, bias=True, activation='prelu', norm=None):
         super(DeconvBlock, self).__init__()
@@ -70,69 +70,6 @@ class DeconvBlock(torch.nn.Module):
             return self.act(out)
         else:
             return out
-
-
-class Decoder_MDCBlock1(torch.nn.Module):
-    def __init__(self, num_filter, num_ft, kernel_size=4, stride=2, padding=1, bias=True, activation='prelu', norm=None, mode='iter1'):
-        super(Decoder_MDCBlock1, self).__init__()
-        self.mode = mode
-        self.num_ft = num_ft - 1
-        self.down_convs = nn.ModuleList()
-        self.up_convs = nn.ModuleList()
-        for i in range(self.num_ft):
-            self.down_convs.append(
-                ConvBlock(num_filter*(2**i), num_filter*(2**(i+1)), kernel_size, stride, padding, bias, activation, norm=None)
-            )
-            self.up_convs.append(
-                DeconvBlock(num_filter*(2**(i+1)), num_filter*(2**i), kernel_size, stride, padding, bias, activation, norm=None)
-            )
-
-    def forward(self, ft_h, ft_l_list):
-        if self.mode == 'iter1' or self.mode == 'conv':
-            ft_h_list = []
-            for i in range(len(ft_l_list)):
-                ft_h_list.append(ft_h)
-                ft_h = self.down_convs[self.num_ft- len(ft_l_list) + i](ft_h)
-
-            ft_fusion = ft_h
-            for i in range(len(ft_l_list)):
-                ft_fusion = self.up_convs[self.num_ft-i-1](ft_fusion - ft_l_list[i]) + ft_h_list[len(ft_l_list)-i-1]
-
-        if self.mode == 'iter2':
-            ft_fusion = ft_h
-            for i in range(len(ft_l_list)):
-                ft = ft_fusion
-                for j in range(self.num_ft - i):
-                    ft = self.down_convs[j](ft)
-                ft = ft - ft_l_list[i]
-                for j in range(self.num_ft - i):
-                    ft = self.up_convs[self.num_ft - i - j - 1](ft)
-                ft_fusion = ft_fusion + ft
-
-        if self.mode == 'iter3':
-            ft_fusion = ft_h
-            for i in range(len(ft_l_list)):
-                ft = ft_fusion
-                for j in range(i+1):
-                    ft = self.down_convs[j](ft)
-                ft = ft - ft_l_list[len(ft_l_list) - i - 1]
-                for j in range(i+1):
-                    # print(j)
-                    ft = self.up_convs[i + 1 - j - 1](ft)
-                ft_fusion = ft_fusion + ft
-
-        if self.mode == 'iter4':
-            ft_fusion = ft_h
-            for i in range(len(ft_l_list)):
-                ft = ft_h
-                for j in range(self.num_ft - i):
-                    ft = self.down_convs[j](ft)
-                ft = ft - ft_l_list[i]
-                for j in range(self.num_ft - i):
-                    ft = self.up_convs[self.num_ft - i - j - 1](ft)
-                ft_fusion = ft_fusion + ft
-
-        return ft_fusion
 
 class Encoder_MDCBlock1(torch.nn.Module):
     def __init__(self, num_filter, num_ft, kernel_size=4, stride=2, padding=1, bias=True, activation='prelu', norm=None, mode='iter1'):
@@ -197,7 +134,69 @@ class Encoder_MDCBlock1(torch.nn.Module):
                 ft_fusion = ft_fusion + ft
 
         return ft_fusion
+    
+class Decoder_MDCBlock1(torch.nn.Module):
+    def __init__(self, num_filter, num_ft, kernel_size=4, stride=2, padding=1, bias=True, activation='prelu', norm=None, mode='iter1'):
+        super(Decoder_MDCBlock1, self).__init__()
+        self.mode = mode
+        self.num_ft = num_ft - 1
+        self.down_convs = nn.ModuleList()
+        self.up_convs = nn.ModuleList()
+        for i in range(self.num_ft):
+            self.down_convs.append(
+                ConvBlock(num_filter*(2**i), num_filter*(2**(i+1)), kernel_size, stride, padding, bias, activation, norm=None)
+            )
+            self.up_convs.append(
+                DeconvBlock(num_filter*(2**(i+1)), num_filter*(2**i), kernel_size, stride, padding, bias, activation, norm=None)
+            )
 
+    def forward(self, ft_h, ft_l_list):
+        if self.mode == 'iter1' or self.mode == 'conv':
+            ft_h_list = []
+            for i in range(len(ft_l_list)):
+                ft_h_list.append(ft_h)
+                ft_h = self.down_convs[self.num_ft- len(ft_l_list) + i](ft_h)
+
+            ft_fusion = ft_h
+            for i in range(len(ft_l_list)):
+                ft_fusion = self.up_convs[self.num_ft-i-1](ft_fusion - ft_l_list[i]) + ft_h_list[len(ft_l_list)-i-1]
+
+        if self.mode == 'iter2':
+            ft_fusion = ft_h
+            for i in range(len(ft_l_list)):
+                ft = ft_fusion
+                for j in range(self.num_ft - i):
+                    ft = self.down_convs[j](ft)
+                ft = ft - ft_l_list[i]
+                for j in range(self.num_ft - i):
+                    ft = self.up_convs[self.num_ft - i - j - 1](ft)
+                ft_fusion = ft_fusion + ft
+
+        if self.mode == 'iter3':
+            ft_fusion = ft_h
+            for i in range(len(ft_l_list)):
+                ft = ft_fusion
+                for j in range(i+1):
+                    ft = self.down_convs[j](ft)
+                ft = ft - ft_l_list[len(ft_l_list) - i - 1]
+                for j in range(i+1):
+                    # print(j)
+                    ft = self.up_convs[i + 1 - j - 1](ft)
+                ft_fusion = ft_fusion + ft
+
+        if self.mode == 'iter4':
+            ft_fusion = ft_h
+            for i in range(len(ft_l_list)):
+                ft = ft_h
+                for j in range(self.num_ft - i):
+                    ft = self.down_convs[j](ft)
+                ft = ft - ft_l_list[i]
+                for j in range(self.num_ft - i):
+                    ft = self.up_convs[self.num_ft - i - j - 1](ft)
+                ft_fusion = ft_fusion + ft
+
+        return ft_fusion
+    
 def make_model(args, parent=False):
     return Net()
 
@@ -491,7 +490,7 @@ class MSBDNNet(nn.Module):
         if Val == False:
             out_A = self.ANet(x1)
         else:
-            return out_J
+            out_A = self.ANet(x2)
             
         out_I = out_T * out_J + (1 - out_T) * out_A
         
