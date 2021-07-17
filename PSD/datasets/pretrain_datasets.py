@@ -387,7 +387,7 @@ class TestData(data.Dataset):
 
         self.haze_dir = val_data_dir
         #self.gt_dir = val_data_dir + 'clear/'
-        with open('/code/dehazeproject/configs/record.txt', "r") as file:
+        with open('/code/PSD/configs/record.txt', "r") as file:
             self.haze_names = file.readlines()
 
 
@@ -453,8 +453,42 @@ class TestData_GCA(data.Dataset):
         super().__init__()
 
         self.haze_dir = val_data_dir
+        #self.gt_dir = val_data_dir + 'clear/'
+        with open('/code/PSD/configs/record.txt', "r") as file:
+            self.haze_names = file.readlines()
+
+
+    def get_images(self, index):
+        haze_name = self.haze_names[index][:-1]
+        #gt_name = haze_name.split('_')[0] + '.png'
+        haze_img = Image.open(self.haze_dir + haze_name).convert('RGB')
         
-        with open('/code/dehazeproject/record.txt', "r") as file:
+        width, height = haze_img.size
+        im_w, im_h = haze_img.size
+        if im_w % 4 != 0 or im_h % 4 != 0:
+            haze_img = haze_img.resize((int(im_w // 4 * 4), int(im_h // 4 * 4))) 
+        img = np.array(haze_img).astype('float') 
+        img_data = torch.from_numpy(img.transpose((2, 0, 1))).float()
+        edge_data = edge_compute(img_data)
+        in_data = torch.cat((img_data, edge_data), dim=0) - 128 
+        return in_data, haze_name
+
+    def __getitem__(self, index):
+        res = self.get_images(index)
+        return res
+
+    def __len__(self):
+        return len(self.haze_names)
+    
+
+class TestData_FFA(data.Dataset):
+    def __init__(self, val_data_dir):
+        super().__init__()
+
+        self.haze_dir = val_data_dir
+        self.haze_names = list(os.walk(self.haze_dir))[0][2]
+        #self.gt_dir = val_data_dir + 'clear/'
+        with open('/code/PSD/configs/record.txt', "r") as file:
             self.haze_names = file.readlines()
 
 
@@ -470,18 +504,17 @@ class TestData_GCA(data.Dataset):
         transform_haze = Compose([ToTensor(), Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
         transform_gt = Compose([ToTensor()])
         haze = transform_haze(haze_img)
-        haze_edge = edge_compute(haze)
-        haze = torch.cat((haze, haze_edge), 0)
         haze_reshaped = transform_haze(haze_reshaped)
+        #haze_edge_data = edge_compute(haze)
+        #haze = torch.cat((haze, haze_edge_data), 0)
+        #gt = transform_gt(gt_img)
 
         return haze, haze_reshaped, haze_name
 
-    
     def __getitem__(self, index):
         res = self.get_images(index)
         return res
 
-    
     def __len__(self):
         return len(self.haze_names)
     
