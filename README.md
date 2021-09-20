@@ -44,6 +44,7 @@ In the paper, all the qualitative results and most visual comparisons are produc
 python test.py
 ```
 - Note that the test.py file is hard coded, and the default code is for the testing of PSD-FFANET model. If you want to test the other two models, you need to modify the code. See annotations in [test.py](https://github.com/zychen-ustc/PSD-Principled-Synthetic-to-Real-Dehazing-Guided-by-Physical-Priors/blob/main/PSD/test.py) and it would only take seconds.
+- If the program reports an error when going through A-Net, please make sure that your PyTorch version is 1.3.0. You could also solve the problem by resize the input of A-Net to 512×512 or delete A-Net (only for testing). 
 
 
 ## Train Custom Model by PSD
