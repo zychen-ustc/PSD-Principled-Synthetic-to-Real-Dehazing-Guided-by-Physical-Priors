@@ -86,67 +86,6 @@ class RealTrainData(data.Dataset):
         return len(self.haze_names)
     
 
-class TrainData_withgt(data.Dataset):
-
-    def __init__(self, crop_size, train_data_dir):
-
-        super().__init__()
-
-        self.haze_dir = train_data_dir + 'unlabeled/'
-        self.gt_dir = train_data_dir + 'DCP/'
-        
-        self.haze_names = list(os.walk(self.haze_dir))[0][2]
-        
-        self.crop_size = crop_size
-  
-
-
-    def __getitem__(self, index):
-        crop_width, crop_height =  self.crop_size
-        haze_name = self.haze_dir + self.haze_names[index]
-        gt_name = self.gt_dir + self.haze_names[index].split('.')[0] + '.png'
-
-        haze_img = Image.open(haze_name).convert('RGB')
-        gt_img = Image.open(gt_name).convert('RGB')
-
-        width, height = haze_img.size
-        
-        transform_haze = Compose([
-            ToTensor(),
-            Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))
-        ])
-        transform_gt = Compose([
-            ToTensor()
-        ])
-
-        if width < crop_width or height < crop_height:
-            if width < height:
-                haze_img = haze_img.resize((260, int(260 * (height / width))), Image.ANTIALIAS)
-                gt_img = gt_img.resize((260, int(260 * (height / width))), Image.ANTIALIAS)
-            else:
-                haze_img = haze_img.resize((int(260 * (width / height)), 260), Image.ANTIALIAS)
-                gt_img = gt_img.resize((int(260 * (width / height)), 260), Image.ANTIALIAS)
-            width, height = haze_img.size
-            
-        # --- x,y coordinate of left-top corner --- #
-        x, y = randrange(0, width - crop_width + 1), randrange(0, height - crop_height + 1)
-        haze_crop_img = haze_img.crop((x, y, x + crop_width, y + crop_height))
-        gt_crop_img = gt_img.crop((x, y, x + crop_width, y + crop_height))
-
-        
-
-        haze = transform_haze(haze_crop_img)
-        gt = transform_gt(gt_crop_img)
-
-        #if list(haze.shape)[0] is not 3 or list(gt.shape)[0] is not 3:
-        #    raise Exception('Bad image channel: {}'.format(gt_name))
-
-        return haze, gt
-
-    def __len__(self):
-        return len(self.haze_names)
-    
-
 class RealTrainData_pseudo_gt(data.Dataset):
 
     def __init__(self, crop_size, train_data_dir):
